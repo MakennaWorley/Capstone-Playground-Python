@@ -27,7 +27,7 @@ For the data found in the `public_datasets` folder here is how the data was gene
 
 msprime
 ```bash
-python make_msprime_dataset.py --name public --n 5000 --seed 42 --out sim_cohort.csv --save-ts sim_cohort.trees
+python make_msprime_dataset.py --name public --n 5000 --seed 77 --out sim --save-effects effects --save-ts tree
 ```
 
 ---
@@ -39,9 +39,9 @@ python make_msprime_dataset.py \
   --name A \
   --n 5000 \
   --seed 42 \
-  --out sim_cohort.csv \
-  --save-effects effect_sizes.csv \
-  --save-ts sim_cohort.trees
+  --out sim.csv \
+  --save-effects effect.csv \
+  --save-ts tree.trees
 ```
 
 ---
@@ -62,7 +62,7 @@ conda activate capstone-msprime
 
 ### 3️⃣ Run the simulation
 ```bash
-python make_msprime_dataset.py --name A --n 5000 --seed 42 --out sim_cohort.csv
+python make_msprime_dataset.py --name public --trees yes --n 5000
 ```
 
 ---
@@ -89,5 +89,5 @@ pip install -r requirements.txt
 
 ### 4️⃣ Run the simulation
 ```bash
-python make_msprime_dataset.py --name A --n 5000 --seed 42 --out sim_cohort.csv
+python make_msprime_dataset.py --name public --n 5000
 ```

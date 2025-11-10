@@ -9,6 +9,17 @@ from sklearn.decomposition import PCA
 
 DEFAULT_OUT = "msprime_sim_cohort.csv"
 DEFAULT_EFF = "msprime_effect_sizes.csv"
+DEFAULT_TREE = "msprime_sim_cohort.trees"
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ("yes", "true", "t", "1", "y"):
+        return True
+    elif v.lower() in ("no", "false", "f", "0", "n"):
+        return False
+    else:
+        raise argparse.ArgumentTypeError("Boolean value expected.")
 
 def slugify(s: str) -> str:
     # keep letters, digits, dot, dash, underscore; collapse others to "_"
@@ -148,16 +159,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--name", type=str, default=None,
                     help="Base name for outputs: produces <name>_msprime_sim_cohort.csv, <name>_msprime_effect_sizes.csv, (optional) <name>_msprime_sim_cohort.trees")
-    ap.add_argument("--trees", action="store_true",
+    ap.add_argument("--trees", type=str2bool, nargs="?", const=True, default=False,
                     help="If set, also save the tree sequence. (With --name, becomes <name>_msprime_sim_cohort.trees)")
 
     ap.add_argument("--n", type=int, default=5000, help="Number of diploid individuals")
     ap.add_argument("--seed", type=int, default=None, help="Random seed (if omitted, a random seed will be chosen and printed)")
 
     # Keep explicit paths for backwards compatibility; they’ll override auto names if provided.
-    ap.add_argument("--out", type=str, default=DEFAULT_OUT, help="Output CSV filename")
-    ap.add_argument("--save-effects", type=str, default=DEFAULT_EFF, help="Optional: save variant effects")
-    ap.add_argument("--save-ts", type=str, default=None, help="Optional: path to save .trees file (overrides --trees)")
+    ap.add_argument("--out", type=str, default=DEFAULT_OUT, help="Name for output simulation data file")
+    ap.add_argument("--save-effects", type=str, default=DEFAULT_EFF, help="Name for output variant effects file")
+    ap.add_argument("--save-ts", type=str, default=None, help="(Optional) Name for output .trees file")
 
     ap.add_argument("--pcs", type=int, default=2, help="Number of PCs to include (0 to skip)")
     ap.add_argument("--maf-min", type=float, default=0.01, help="Minor allele frequency lower bound")
@@ -168,7 +179,7 @@ def main():
 
     # seed logic
     if args.seed is None:
-        args.seed = int(np.random.SeedSequence().entropy)
+        args.seed = int(np.random.SeedSequence().entropy % (2**32))
         print(f"[info] No --seed provided. Using randomly generated seed: {args.seed}")
     else:
         print(f"[info] Using user-specified seed: {args.seed}")
@@ -180,17 +191,24 @@ def main():
 
     # If user didn't override the defaults, auto-rename from --name
     if base:
-        if args.out == DEFAULT_OUT:
-            args.out = f"{base}_msprime_sim_cohort.csv"
-        if args.save_effects == DEFAULT_EFF:
-            args.save_effects = f"{base}_msprime_effect_sizes.csv"
-        # Only set .trees auto name if user asked for trees and didn’t pass a path
-        if args.save_ts:
-            args.save_ts = f"{base}_msprime_sim_cohort.trees" if args.trees or True else None
+        prefix = f"{base}_msprime"
     else:
-        # No --name: still allow --trees to create a sensible default
-        if args.trees and not args.save_ts:
-            args.save_ts = "msprime_sim_cohort.trees"
+        prefix = "msprime"
+
+    if args.out == DEFAULT_OUT:
+        args.out = f"{prefix}_{DEFAULT_OUT}.csv"
+    else:
+        args.out = f"{prefix}_{args.out}.csv"
+
+    if args.save_effects == DEFAULT_EFF:
+        args.save_effects = f"{prefix}_{DEFAULT_EFF}.csv"
+    else:
+        args.save_effects = f"{prefix}_{args.save_effects}.csv"
+
+    if args.save_ts is not None:
+        args.save_ts = f"{prefix}_{args.save_ts}.trees"
+    elif args.trees:
+        args.save_ts = f"{prefix}_{DEFAULT_TREE}.trees"
 
     # output dir
     output_dir = os.path.join(os.getcwd(), "datasets")
@@ -242,7 +260,6 @@ def main():
     df.to_csv(args.out, index=False)
 
     # 8) Save effects/variant metadata for reproducibility
-    #    We’ll include site positions and whether each kept variant was causal.
     kept_sites = [v.site.position for v in ts.variants() if keep_mask[v.site.id]]
     kept_sites = np.array(kept_sites)
     causal_flags = np.zeros(Gf.shape[1], dtype=int)
@@ -257,18 +274,6 @@ def main():
     eff.to_csv(args.save_effects, index=False)
 
     # 9) Minimal data dictionary (print to console)
-    '''print("\nSaved:", args.out)
-    print("Columns:")
-    print(" - individual_id: integer id")
-    print(" - sex: 0/1 (binary categorical)")
-    print(" - age: years")
-    print(" - env_index: standardized environmental exposure")
-    print(" - polygenic_score: standardized PRS")
-    print(" - quant_trait: standardized quantitative trait")
-    print(" - disease_status: 0/1 (response variable)")
-    if args.pcs > 0:
-        print(" - PC1..PCk: genotype principal components")'''
-
     print(f"\nSaved dataset to: {args.out}")
     print(f"Saved variant effects to: {args.save_effects}")
     if args.save_ts:
