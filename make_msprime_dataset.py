@@ -21,15 +21,15 @@ def simulate_tree_sequence(n_samples: int,
                            seed: int = 42) -> tskit.TreeSequence:
     """
     Simulate a simple neutral diploid cohort using msprime.
-    - n_samples: number of diploid individuals (we’ll request 2*n haploid samples)
+    - n_samples: number of diploid individuals
     """
     rng = np.random.default_rng(seed)
     ts = msprime.sim_ancestry(
-        samples=n_samples,            # diploids => 2 haploids per individual
+        samples=n_samples,
         recombination_rate=r,
         sequence_length=seq_len,
         population_size=Ne,
-        ploidy=2,                         # DTWF requires diploid biology
+        ploidy=2,
         model="dtwf",
         random_seed=int(rng.integers(1, 2**31 - 1))
     )
@@ -172,16 +172,16 @@ def main():
     # If user didn't override the defaults, auto-rename from --name
     if base:
         if args.out == DEFAULT_OUT:
-            args.out = f"{base}_sim_cohort.csv"
+            args.out = f"{base}_msprime_sim_cohort.csv"
         if args.save_effects == DEFAULT_EFF:
-            args.save_effects = f"{base}_effect_sizes.csv"
+            args.save_effects = f"{base}_msprime_effect_sizes.csv"
         # Only set .trees auto name if user asked for trees and didn’t pass a path
         if args.save_ts:
-            args.save_ts = f"{base}_sim_cohort.trees" if args.trees or True else None
+            args.save_ts = f"{base}_msprime_sim_cohort.trees" if args.trees or True else None
     else:
         # No --name: still allow --trees to create a sensible default
         if args.trees and not args.save_ts:
-            args.save_ts = "sim_cohort.trees"
+            args.save_ts = "msprime_sim_cohort.trees"
 
     # output dir
     output_dir = os.path.join(os.getcwd(), "datasets")
