@@ -1,12 +1,14 @@
 import os, re, argparse
+import sys
+
 import numpy as np
 import pandas as pd
 import msprime
 import tskit
 from sklearn.decomposition import PCA
 
-DEFAULT_OUT = "sim_cohort.csv"
-DEFAULT_EFF = "effect_sizes.csv"
+DEFAULT_OUT = "msprime_sim_cohort.csv"
+DEFAULT_EFF = "msprime_effect_sizes.csv"
 
 def slugify(s: str) -> str:
     # keep letters, digits, dot, dash, underscore; collapse others to "_"
@@ -21,23 +23,22 @@ def simulate_tree_sequence(n_samples: int,
                            seed: int = 42) -> tskit.TreeSequence:
     """
     Simulate a simple neutral diploid cohort using msprime.
-    - n_samples: number of diploid individuals (we’ll request 2*n haploid samples)
+    - n_samples: number of diploid individuals
     """
-    rng = np.random.default_rng(seed)
     ts = msprime.sim_ancestry(
-        samples=n_samples,            # diploids => 2 haploids per individual
+        samples=n_samples,
         recombination_rate=r,
         sequence_length=seq_len,
         population_size=Ne,
-        ploidy=2,                         # DTWF requires diploid biology
+        ploidy=2,
         model="dtwf",
-        random_seed=int(rng.integers(1, 2**31 - 1))
+        random_seed=seed
     )
     ts = msprime.sim_mutations(
         ts,
         rate=mu,
         model=msprime.SLiMMutationModel(type=1),  # neutral, infinite sites-like
-        random_seed=int(rng.integers(1, 2**31 - 1))
+        random_seed=seed + 1
     )
     return ts
 
@@ -146,12 +147,12 @@ def compute_pcs(G: np.ndarray, n_components=2):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--name", type=str, default=None,
-                    help="Base name for outputs: produces <name>_sim_cohort.csv, <name>_effect_sizes.csv, <name>_sim_cohort.trees")
+                    help="Base name for outputs: produces <name>_msprime_sim_cohort.csv, <name>_msprime_effect_sizes.csv, (optional) <name>_msprime_sim_cohort.trees")
     ap.add_argument("--trees", action="store_true",
-                    help="If set, also save the tree sequence. (With --name, becomes <name>_sim_cohort.trees)")
+                    help="If set, also save the tree sequence. (With --name, becomes <name>_msprime_sim_cohort.trees)")
 
     ap.add_argument("--n", type=int, default=5000, help="Number of diploid individuals")
-    ap.add_argument("--seed", type=int, default=42, help="Random seed")
+    ap.add_argument("--seed", type=int, default=None, help="Random seed (if omitted, a random seed will be chosen and printed)")
 
     # Keep explicit paths for backwards compatibility; they’ll override auto names if provided.
     ap.add_argument("--out", type=str, default=DEFAULT_OUT, help="Output CSV filename")
@@ -162,9 +163,17 @@ def main():
     ap.add_argument("--maf-min", type=float, default=0.01, help="Minor allele frequency lower bound")
     ap.add_argument("--maf-max", type=float, default=0.5, help="Minor allele frequency upper bound")
     ap.add_argument("--prop-causal", type=float, default=0.05, help="Proportion of variants set as causal")
+
     args = ap.parse_args()
 
+    # seed logic
+    if args.seed is None:
+        args.seed = int(np.random.SeedSequence().entropy)
+        print(f"[info] No --seed provided. Using randomly generated seed: {args.seed}")
+    else:
+        print(f"[info] Using user-specified seed: {args.seed}")
     rng = np.random.default_rng(args.seed)
+    np.random.seed(args.seed)
 
     # naming logic
     base = slugify(args.name) if args.name else None
@@ -172,16 +181,16 @@ def main():
     # If user didn't override the defaults, auto-rename from --name
     if base:
         if args.out == DEFAULT_OUT:
-            args.out = f"{base}_sim_cohort.csv"
+            args.out = f"{base}_msprime_sim_cohort.csv"
         if args.save_effects == DEFAULT_EFF:
-            args.save_effects = f"{base}_effect_sizes.csv"
+            args.save_effects = f"{base}_msprime_effect_sizes.csv"
         # Only set .trees auto name if user asked for trees and didn’t pass a path
         if args.save_ts:
-            args.save_ts = f"{base}_sim_cohort.trees" if args.trees or True else None
+            args.save_ts = f"{base}_msprime_sim_cohort.trees" if args.trees or True else None
     else:
         # No --name: still allow --trees to create a sensible default
         if args.trees and not args.save_ts:
-            args.save_ts = "sim_cohort.trees"
+            args.save_ts = "msprime_sim_cohort.trees"
 
     # output dir
     output_dir = os.path.join(os.getcwd(), "datasets")

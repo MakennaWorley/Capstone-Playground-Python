@@ -21,6 +21,16 @@ All generated files are stored in the **`datasets/`** directory and can be used 
 | **`datasets/sim_cohort.trees`** *(optional)* | The full `msprime` tree sequence containing the complete genealogical and mutational history of the simulation. Can be reloaded with `tskit.load()` for downstream population-genetics analyses or to regenerate genotype matrices. |
 
 ---
+## 📂 Public Datasets
+
+For the data found in the `public_datasets` folder here is how the data was generated:
+
+msprime
+```bash
+python make_msprime_dataset.py --name public --n 5000 --seed 42 --out sim_cohort.csv --save-ts sim_cohort.trees
+```
+
+---
 
 ### ⚙️ Example Command
 
