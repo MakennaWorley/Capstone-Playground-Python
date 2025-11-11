@@ -1,5 +1,4 @@
 import os, re, argparse
-import sys
 
 import numpy as np
 import pandas as pd
@@ -7,9 +6,9 @@ import msprime
 import tskit
 from sklearn.decomposition import PCA
 
-DEFAULT_OUT = "msprime_sim_cohort.csv"
-DEFAULT_EFF = "msprime_effect_sizes.csv"
-DEFAULT_TREE = "msprime_sim_cohort.trees"
+DEFAULT_OUT = "sim_cohort"
+DEFAULT_EFF = "effect_sizes"
+DEFAULT_TREE = "sim_cohort"
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -274,7 +273,7 @@ def main():
     eff.to_csv(args.save_effects, index=False)
 
     # 9) Minimal data dictionary (print to console)
-    print(f"\nSaved dataset to: {args.out}")
+    print(f"\nSaved simulation to: {args.out}")
     print(f"Saved variant effects to: {args.save_effects}")
     if args.save_ts:
         print(f"Saved tree sequence to: {args.save_ts}")

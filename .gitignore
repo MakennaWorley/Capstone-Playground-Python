@@ -23,4 +23,5 @@ Thumbs.db
 
 datasets/
 environment_1.yml
+environment_2.yml
 generate_requirements.txt
