@@ -1,7 +1,7 @@
 # 🧬 msprime and simuPOP Experiments
 
 Just me experimenting with the [**msprime**](https://tskit.dev/msprime/docs/stable/intro.html) and [**simuPOP**](https://simupop.readthedocs.io/en/latest/) libraries for my senior capstone.  
-The goal is to generate and analyze simulated genetic data under different demographic and evolutionary scenarios.
+The goal is to generate simulated genetic data under different demographic and evolutionary scenarios.
 
 ---
 
