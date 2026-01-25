@@ -33,7 +33,6 @@ All generated files are stored in the **`datasets/`** directory and can be used 
 - **Covariates:** Adds simulated demographic and environmental variables (`sex`, `age`, `env_index`).  
 - **Traits:** Derives both continuous (`quant_trait`) and binary (`disease_status`) outcomes using linear and logistic models based on the polygenic score and covariates.  
 - **PCA (optional):** Performs principal component analysis of the genotype matrix to create population-structure covariates (`--pcs` components).  
-- **Outputs:** Saves a per-individual CSV dataset and an effect-size CSV file, plus an optional `.trees` file for full genealogical reconstruction.
 
 ---
 
@@ -56,6 +55,39 @@ This produces:
 
 ---
 
+### ⚙️ How `simulate_population.py` Works
+
+- **Founder Ancestry:** Uses `msprime` to generate a base population of founder diploids ($N_0$). It simulates ancestral lineages and mutations under a Wright–Fisher (DTWF) model with configurable effective population size (`--Ne`), mutation rate (`--mu`), recombination rate (`--recomb`), and sequence length (`--seq-len`).  
+- **Multi-Generation Pedigree:** CBuilds a forward-time pedigree by randomly pairing parents from the current generation to produce a specified number of offspring (`--children`) over a set number of generations (`--generations`).  
+- **Mendelian Inheritance:** Simulates genetic transmission for every child using Mendelian segregation rules, where alleles are drawn from parents based on their dosage at each locus.  
+- **Genetic Dosage:** Calculates a "dosage" for each individual, which is the aggregate sum of all derived alleles across the simulated loci, serving as a summary statistic for the individual's genotype.  
+- **Systematic Masking:** Simulates incomplete historical records by randomly setting individual `dosage` values to `NaN` based on a user-defined `--mask-rate`.  
+- **Graph Metadata:** Generates a pedigree edge-list (parent-to-child mapping) and a full genotype matrix, allowing models to utilize the complete population graph structure.  
+- **Reproducible Seeds:** PManages global entropy to ensure that ancestry simulation, pedigree branching, and masking patterns are consistent across runs.  
+
+---
+
+### ⚙️ Example Command
+
+```bash
+python simulate_population.py \
+  --name public \
+  --N0 500 \
+  --generations 4 \
+  --children 2 \
+  --mask-rate 0.5 \
+  --seed 42
+```
+
+This produces:
+- `datasets/public_masked_out.csv`
+- - `datasets/public_unmasked_out.csv`
+- `datasets/public_pedigree.csv`
+- `datasets/public_genotypes.csv`
+- `datasets/public_meta.csv`
+
+---
+
 ## simuPOP
 
 ### 📂 Output Files (simuPOP)
@@ -75,7 +107,6 @@ This produces:
 - **Covariates:** Adds synthetic environmental and demographic covariates (`sex`, `age`, `env_index`).  
 - **Traits:** Produces both continuous (`quant_trait`) and binary (`disease_status`, with `disease_prob`) phenotypes using logistic and linear models incorporating the polygenic score and covariates.  
 - **PCA (optional):** Performs lightweight genotype PCA using NumPy SVD (`--pcs` controls component count).  
-- **Outputs:** Two CSVs written to `datasets/`: one for the cohort, one for variant metadata.
 
 ---
 

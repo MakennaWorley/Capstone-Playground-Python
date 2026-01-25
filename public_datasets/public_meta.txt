@@ -1,0 +1,9 @@
+seed=42
+N0=500
+gens=4
+children=2
+mask_rate=0.5
+Ne=10000
+seq_len=500000.0
+recomb=1e-08
+mu=1e-08
